@@ -23,6 +23,7 @@ import de.stklcode.pubtrans.ura.model.Message;
 import de.stklcode.pubtrans.ura.model.Stop;
 import de.stklcode.pubtrans.ura.model.Trip;
 import de.stklcode.pubtrans.ura.reader.AsyncUraTripReader;
+import io.github.pixee.security.BoundedLineReader;
 
 import java.io.*;
 import java.net.URI;
@@ -267,7 +268,7 @@ public class UraClient implements Serializable {
         try (InputStream is = requestInstant(REQUEST_TRIP, query);
              BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
             String version = null;
-            String line = br.readLine();
+            String line = BoundedLineReader.readLine(br, 5_000_000);
             while (line != null && (limit == null || trips.size() < limit)) {
                 List<Serializable> l = mapper.readValue(line, mapper.getTypeFactory().constructCollectionType(List.class, Serializable.class));
                 /* Check if result exists and has correct response type */
@@ -278,7 +279,7 @@ public class UraClient implements Serializable {
                         trips.add(new Trip(l, version));
                     }
                 }
-                line = br.readLine();
+                line = BoundedLineReader.readLine(br, 5_000_000);
             }
         } catch (IOException e) {
             throw new UraClientException("Failed to read trips from API", e);
@@ -355,7 +356,7 @@ public class UraClient implements Serializable {
         try (InputStream is = requestInstant(REQUEST_STOP, query);
              BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
             String line;
-            while ((line = br.readLine()) != null) {
+            while ((line = BoundedLineReader.readLine(br, 5_000_000)) != null) {
                 List<Serializable> l = mapper.readValue(line, mapper.getTypeFactory().constructCollectionType(List.class, Serializable.class));
                 /* Check if result exists and has correct response type */
                 if (l != null && !l.isEmpty() && l.get(0).equals(RES_TYPE_STOP)) {
@@ -424,7 +425,7 @@ public class UraClient implements Serializable {
         try (InputStream is = requestInstant(REQUEST_MESSAGE, query);
              BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
             String version = null;
-            String line = br.readLine();
+            String line = BoundedLineReader.readLine(br, 5_000_000);
             while (line != null && (limit == null || messages.size() < limit)) {
                 List<Serializable> l = mapper.readValue(line, mapper.getTypeFactory().constructCollectionType(List.class, Serializable.class));
                 /* Check if result exists and has correct response type */
@@ -435,7 +436,7 @@ public class UraClient implements Serializable {
                         messages.add(new Message(l, version));
                     }
                 }
-                line = br.readLine();
+                line = BoundedLineReader.readLine(br, 5_000_000);
             }
         } catch (IOException e) {
             throw new UraClientException("Failed to read messages from API", e);
